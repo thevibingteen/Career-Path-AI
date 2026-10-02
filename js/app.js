@@ -15,6 +15,8 @@ import { pdfService } from './services/pdfService.js';
 
 // Application State
 const appState = {
+  view: 'landing', // 'landing' | 'onboarding' | 'dashboard'
+  hasCompletedOnboarding: false,
   currentStep: 1,
   totalSteps: 7,
   profile: {
@@ -22,20 +24,16 @@ const appState = {
     location: '',
     educationLevel: "Bachelor's Degree",
     studyField: 'Computer Science / IT',
-    isStudentOrRecentGrad: false,
-    experienceLevel: 'Entry-Level (0-1 yrs)',
-    employmentStatus: 'Job Seeker',
+    isStudentOrRecentGrad: true,
+    experienceLevel: 'Student / Fresher (0-1 yrs)',
+    employmentStatus: 'Student / Job Seeker',
     hasInternshipExperience: false,
     hasProjectExperience: true,
-    skills: [
-      { name: 'JavaScript', proficiency: 'Intermediate' },
-      { name: 'HTML', proficiency: 'Advanced' },
-      { name: 'CSS', proficiency: 'Intermediate' }
-    ],
-    interests: ['Software Development', 'Web Development'],
-    targetRole: 'Full Stack Engineer',
-    timeline: 'Medium-term (6-12 months)',
-    workPreference: 'Remote',
+    skills: [],
+    interests: [],
+    targetRole: '',
+    timeline: 'Short-term (3-6 months)',
+    workPreference: 'Flexible',
     careerObjective: 'First Job',
     hoursAvailablePerWeek: 10,
     learningBudget: 'Free Only'
@@ -88,16 +86,21 @@ export function initApp() {
   setupEventListeners();
   initTheme();
 
-  // If a profile with matches exists, render results; else render onboarding wizard
-  if (appState.matches.length > 0 && appState.selectedCareer) {
+  // Route based on user journey state
+  if (appState.hasCompletedOnboarding && appState.matches.length > 0 && appState.selectedCareer) {
     renderResultsDashboard();
-  } else {
+  } else if (appState.view === 'onboarding') {
     renderOnboardingWizard();
+  } else {
+    renderLandingHero();
   }
 }
 
 function loadPersistedData() {
   const saved = storageService.loadData();
+  if (saved.hasCompletedOnboarding) {
+    appState.hasCompletedOnboarding = true;
+  }
   if (saved.profile) {
     appState.profile = { ...appState.profile, ...saved.profile };
   }
@@ -120,17 +123,22 @@ function loadPersistedData() {
     appState.coachMessages = saved.coachMessages;
   }
 
-  // Pre-calculate deterministic matches
-  if (appState.profile.skills && appState.profile.skills.length > 0) {
+  // Pre-calculate deterministic matches ONLY if user has completed onboarding and has skills
+  if (appState.hasCompletedOnboarding && appState.profile.skills && appState.profile.skills.length > 0) {
     appState.matches = matchProfileToCareers(appState.profile, careerCatalog);
     const targetId = saved.selectedCareerId || appState.matches[0]?.career.id;
     appState.selectedCareer = careerCatalog.find(c => c.id === targetId) || appState.matches[0]?.career;
     refreshCareerDetails();
+    appState.view = 'dashboard';
+  } else {
+    appState.view = 'landing';
+    appState.hasCompletedOnboarding = false;
   }
 }
 
 function saveState() {
   storageService.saveData({
+    hasCompletedOnboarding: appState.hasCompletedOnboarding,
     profile: appState.profile,
     selectedCareerId: appState.selectedCareer?.id,
     completedRoadmapWeeks: appState.completedRoadmapWeeks,
@@ -151,6 +159,289 @@ function refreshCareerDetails() {
     appState.profile.hoursAvailablePerWeek,
     appState.roadmapDuration || 12
   );
+}
+
+// -----------------------------------------------------------------------------
+// Landing Hero Page
+// -----------------------------------------------------------------------------
+function renderLandingHero() {
+  const hasActiveDashboard = appState.hasCompletedOnboarding && appState.matches.length > 0 && appState.selectedCareer;
+
+  const trackIcons = {
+    'full-stack-engineer': '🌐',
+    'frontend-engineer': '🎨',
+    'backend-engineer': '⚙️',
+    'data-scientist': '📊',
+    'machine-learning-engineer': '🤖',
+    'cloud-devops-engineer': '☁️',
+    'cybersecurity-analyst': '🛡️',
+    'mobile-app-developer': '📱',
+    'qa-automation-engineer': '🧪',
+    'product-manager': '🚀'
+  };
+
+  const trackCardsHtml = careerCatalog.map(c => {
+    const icon = trackIcons[c.id] || '💼';
+    const topSkills = (c.essentialSkills || []).slice(0, 4);
+    return `
+      <div class="track-preview-card">
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
+            <div style="font-size: 2rem;" aria-hidden="true">${icon}</div>
+            <span class="badge badge-local" style="font-size: 0.75rem;">${escapeHtml(c.category)}</span>
+          </div>
+          <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.4rem;">
+            ${escapeHtml(c.title)}
+          </h3>
+          <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 1rem;">
+            ${escapeHtml(c.description.slice(0, 115))}...
+          </p>
+          <div style="margin-bottom: 1rem;">
+            <span style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 0.35rem;">
+              Core Tech Stack
+            </span>
+            <div class="chips-container" style="gap: 0.35rem;">
+              ${topSkills.map(s => `<span class="chip" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;">${escapeHtml(s)}</span>`).join('')}
+            </div>
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-sm track-assess-btn" data-track-title="${escapeAttr(c.title)}" style="width: 100%; justify-content: center;">
+          Assess My Fit for This Role →
+        </button>
+      </div>
+    `;
+  }).join('');
+
+  appContainer.innerHTML = `
+    <div style="animation: fadeIn 0.3s ease-out;">
+      ${hasActiveDashboard ? `
+        <!-- Active Plan Banner for Returning Users -->
+        <div style="max-width: 960px; margin: 0 auto 1.5rem; background: var(--bg-card); border: 1px solid var(--primary-border); border-radius: var(--radius-lg); padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; box-shadow: var(--shadow-sm);">
+          <div>
+            <span style="font-size: 0.75rem; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.05em;">Welcome Back</span>
+            <div style="font-weight: 700; font-size: 1.05rem; color: var(--text-main);">
+              Active Plan: <strong>${escapeHtml(appState.selectedCareer.title)}</strong> (${appState.matches[0]?.overallScore || 0}% Fit)
+            </div>
+          </div>
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <button id="resumeDashboardBtn" class="btn btn-primary btn-sm">
+              Resume Your Dashboard →
+            </button>
+            <button id="heroRestartBtn" class="btn btn-secondary btn-sm">
+              Start Fresh
+            </button>
+          </div>
+        </div>
+      ` : ''}
+
+      <!-- Hero Section -->
+      <section class="hero-section">
+        <div class="hero-badge">
+          <span>🎓</span> Built for Students, Freshers &amp; Career Pivoters
+        </div>
+        <h1 class="hero-title">
+          Find Your Ideal Tech Career Path With Confidence
+        </h1>
+        <p class="hero-subtitle">
+          Overwhelmed by countless tech stacks and confusing advice? Take a guided 2-minute assessment to identify your highest-affinity engineering discipline, pinpoint your skill gaps, and follow a personalized 12-week roadmap tailored to your weekly study hours.
+        </p>
+
+        <div class="hero-cta-group">
+          <button class="btn btn-primary btn-lg" id="heroStartBtn">
+            <span>🚀</span> Start Free Assessment (2 mins)
+          </button>
+          <button class="btn btn-secondary btn-lg" id="heroBrowseBtn">
+            <span>🧭</span> Explore 10 Tech Tracks
+          </button>
+        </div>
+
+        <div class="trust-pillars">
+          <div class="trust-pillar-item">
+            <span>⚡</span>
+            <span><strong>Instant Guidance</strong> (Zero Wait Time)</span>
+          </div>
+          <div class="trust-pillar-item">
+            <span>🔒</span>
+            <span><strong>100% Privacy</strong> (Runs in your browser)</span>
+          </div>
+          <div class="trust-pillar-item">
+            <span>💸</span>
+            <span><strong>100% Free</strong> (No subscriptions or paywalls)</span>
+          </div>
+          <div class="trust-pillar-item">
+            <span>🎓</span>
+            <span><strong>Campus Placement Ready</strong></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- How It Works Section -->
+      <section style="max-width: 1020px; margin: 0 auto 4rem; padding: 0 1rem;">
+        <div style="text-align: center; margin-bottom: 2.5rem;">
+          <h2 style="font-size: 1.85rem; font-weight: 800; color: var(--text-main); margin-bottom: 0.5rem;">
+            How CareerPath AI Guides You
+          </h2>
+          <p style="color: var(--text-muted); font-size: 0.95rem; max-width: 600px; margin: 0 auto;">
+            From zero clarity to an actionable, personalized roadmap in three student-friendly steps.
+          </p>
+        </div>
+
+        <div class="grid-3" style="gap: 1.5rem;">
+          <div class="process-card">
+            <div class="process-icon" aria-hidden="true">📝</div>
+            <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem;">
+              1. Share Your Starting Point
+            </h3>
+            <p style="font-size: 0.875rem; color: var(--text-muted); line-height: 1.5;">
+              Tell us your background, skills (beginners with zero programming skills are welcome!), domain interests, and weekly available study hours.
+            </p>
+          </div>
+
+          <div class="process-card">
+            <div class="process-icon" aria-hidden="true">⚖️</div>
+            <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem;">
+              2. Deterministic Fit Analysis
+            </h3>
+            <p style="font-size: 0.875rem; color: var(--text-muted); line-height: 1.5;">
+              Our transparent guidance engine calculates match scores across 10 engineering specializations and identifies your exact missing competencies.
+            </p>
+          </div>
+
+          <div class="process-card">
+            <div class="process-icon" aria-hidden="true">🗺️</div>
+            <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem;">
+              3. Personalized Action Plan
+            </h3>
+            <p style="font-size: 0.875rem; color: var(--text-muted); line-height: 1.5;">
+              Follow week-by-week milestones, hands-on portfolio projects, placement prep checklists, and interview question guides.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 10 Career Tracks Preview Grid -->
+      <section id="tracksSection" style="max-width: 1100px; margin: 0 auto 4rem; padding: 0 1rem;">
+        <div style="text-align: center; margin-bottom: 2.5rem;">
+          <span class="badge badge-local" style="margin-bottom: 0.5rem;">Comprehensive Catalog</span>
+          <h2 style="font-size: 1.85rem; font-weight: 800; color: var(--text-main); margin-bottom: 0.5rem;">
+            Explore All 10 In-Demand Tech Roles
+          </h2>
+          <p style="color: var(--text-muted); font-size: 0.95rem; max-width: 650px; margin: 0 auto;">
+            Compare responsibilities and core tech stacks. Click any role to assess your personalized fit.
+          </p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 1.25rem;">
+          ${trackCardsHtml}
+        </div>
+      </section>
+
+      <!-- Bottom Reassurance Banner -->
+      <section style="max-width: 860px; margin: 0 auto 3.5rem; padding: 2.5rem 1.5rem; background: linear-gradient(135deg, rgba(79, 70, 229, 0.08), rgba(6, 182, 212, 0.08)); border: 1px solid var(--primary-border); border-radius: var(--radius-lg); text-align: center;">
+        <h3 style="font-size: 1.5rem; font-weight: 800; color: var(--text-main); margin-bottom: 0.5rem;">
+          Ready to Chart Your Career Trajectory?
+        </h3>
+        <p style="color: var(--text-muted); font-size: 0.925rem; max-width: 540px; margin: 0 auto 1.5rem;">
+          Join students and freshers using CareerPath AI to stop guessing and start building job-ready skills today.
+        </p>
+        <button class="btn btn-primary btn-lg" id="bottomStartBtn">
+          <span>🚀</span> Start Free Assessment Now
+        </button>
+      </section>
+    </div>
+  `;
+
+  bindLandingEvents();
+}
+
+function bindLandingEvents() {
+  const startBtns = [document.getElementById('heroStartBtn'), document.getElementById('bottomStartBtn')];
+  startBtns.forEach(btn => {
+    if (btn) {
+      btn.addEventListener('click', () => {
+        appState.view = 'onboarding';
+        appState.currentStep = 1;
+        renderOnboardingWizard();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    }
+  });
+
+  const browseBtn = document.getElementById('heroBrowseBtn');
+  if (browseBtn) {
+    browseBtn.addEventListener('click', () => {
+      const section = document.getElementById('tracksSection');
+      if (section) {
+        section.scrollIntoView({ behavior: 'smooth' });
+      }
+    });
+  }
+
+  // Assess specific track button on cards
+  document.querySelectorAll('.track-assess-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const trackTitle = btn.dataset.trackTitle;
+      appState.profile.targetRole = trackTitle;
+      appState.view = 'onboarding';
+      appState.currentStep = 1;
+      saveState();
+      renderOnboardingWizard();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  });
+
+  // Returning user buttons
+  const resumeBtn = document.getElementById('resumeDashboardBtn');
+  if (resumeBtn) {
+    resumeBtn.addEventListener('click', () => {
+      appState.view = 'dashboard';
+      renderResultsDashboard();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  const restartBtn = document.getElementById('heroRestartBtn');
+  if (restartBtn) {
+    restartBtn.addEventListener('click', () => {
+      resetUserAssessment();
+    });
+  }
+}
+
+function resetUserAssessment() {
+  if (confirm('Start a fresh career assessment? Your current plan progress will be reset.')) {
+    appState.hasCompletedOnboarding = false;
+    appState.profile = {
+      name: '',
+      location: '',
+      educationLevel: "Bachelor's Degree",
+      studyField: 'Computer Science / IT',
+      isStudentOrRecentGrad: true,
+      experienceLevel: 'Student / Fresher (0-1 yrs)',
+      employmentStatus: 'Student / Job Seeker',
+      hasInternshipExperience: false,
+      hasProjectExperience: true,
+      skills: [],
+      interests: [],
+      targetRole: '',
+      timeline: 'Short-term (3-6 months)',
+      workPreference: 'Flexible',
+      careerObjective: 'First Job',
+      hoursAvailablePerWeek: 10,
+      learningBudget: 'Free Only'
+    };
+    appState.currentStep = 1;
+    appState.matches = [];
+    appState.selectedCareer = null;
+    appState.completedRoadmapWeeks = [];
+    appState.completedProjectIds = [];
+    appState.practicedInterviewQuestionIds = [];
+    appState.completedPlacementTopicIds = [];
+    appState.view = 'onboarding';
+    saveState();
+    renderOnboardingWizard();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
 }
 
 // -----------------------------------------------------------------------------
@@ -284,9 +575,9 @@ function renderStepExperience() {
 
 function renderStepSkills() {
   const commonSkills = [
-    'JavaScript', 'Python', 'React', 'Node.js', 'SQL', 'Git', 'HTML', 'CSS',
-    'TypeScript', 'Docker', 'Kubernetes', 'Linux', 'AWS', 'Machine Learning',
-    'Figma', 'UI Design', 'PostgreSQL', 'Tailwind CSS', 'REST APIs', 'Statistics'
+    'Python', 'Java', 'C++', 'JavaScript', 'HTML & CSS', 'SQL', 'Git & GitHub',
+    'Data Structures (DSA)', 'React', 'Node.js', 'Linux Basics', 'Machine Learning',
+    'Figma / UI Design', 'Cloud Basics', 'REST APIs', 'Problem Solving'
   ];
 
   const currentSkillChips = (appState.profile.skills || []).map((s, idx) => `
@@ -299,13 +590,13 @@ function renderStepSkills() {
   return `
     <h2 style="font-size: 1.3rem; margin-bottom: 0.5rem;">Skills &amp; Competencies</h2>
     <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.5rem;">
-      Add your technical and domain skills with self-assessed proficiency.
+      Add your technical and domain skills with self-assessed proficiency. Beginners with zero prior experience are welcome!
     </p>
 
-    <div class="form-group" style="background: var(--bg-card-subtle); padding: 1rem; border-radius: var(--radius-md);">
+    <div class="form-group" style="background: var(--bg-card-subtle); padding: 1rem; border-radius: var(--radius-md); border: 1px solid var(--border);">
       <label class="form-label" for="skillSearchInput">Add a Skill</label>
       <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-        <input type="text" id="skillSearchInput" class="form-input" placeholder="Type a skill (e.g. Python, React)..." style="flex: 1; min-width: 200px;">
+        <input type="text" id="skillSearchInput" class="form-input" placeholder="Type a skill (e.g. Python, React, SQL)..." style="flex: 1; min-width: 200px;">
         <select id="skillProficiencyInput" class="form-select" style="width: auto;">
           <option value="Beginner">Beginner</option>
           <option value="Intermediate" selected>Intermediate</option>
@@ -318,12 +609,12 @@ function renderStepSkills() {
     <div class="form-group">
       <label class="form-label">Your Active Skills (${appState.profile.skills.length})</label>
       <div class="chips-container" id="activeSkillsContainer">
-        ${currentSkillChips.length ? currentSkillChips : '<span style="color: var(--text-muted); font-size: 0.85rem;">No skills added yet. Click suggestions below or type a skill above.</span>'}
+        ${currentSkillChips.length ? currentSkillChips : '<div style="color: var(--text-muted); font-size: 0.85rem; padding: 0.5rem 0;">No skills added yet. <em>Beginners welcome!</em> Click quick suggestions below or click Next to explore entry pathways.</div>'}
       </div>
     </div>
 
     <div class="form-group" style="margin-top: 1.5rem;">
-      <label class="form-label" style="font-size: 0.8rem; color: var(--text-muted);">Quick Suggestions</label>
+      <label class="form-label" style="font-size: 0.8rem; color: var(--text-muted);">Popular Student Skills (Click to quick-add)</label>
       <div class="chips-container">
         ${commonSkills.map(skill => `
           <button type="button" class="chip quick-add-skill" data-skill-name="${skill}">+ ${skill}</button>
@@ -333,7 +624,9 @@ function renderStepSkills() {
 
     <div style="display: flex; justify-content: space-between; margin-top: 2rem;">
       <button class="btn btn-secondary" id="prevStepBtn">← Back</button>
-      <button class="btn btn-primary" id="nextStepBtn" ${appState.profile.skills.length === 0 ? 'disabled' : ''}>Next: Interests →</button>
+      <button class="btn btn-primary" id="nextStepBtn">
+        ${appState.profile.skills.length === 0 ? 'Next: Interests (Beginner Track) →' : 'Next: Interests →'}
+      </button>
     </div>
   `;
 }
@@ -348,7 +641,7 @@ function renderStepInterests() {
   return `
     <h2 style="font-size: 1.3rem; margin-bottom: 0.5rem;">Domain Interests</h2>
     <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.5rem;">
-      Select the technology domains you are genuinely excited to work in.
+      Select the technology domains you are excited to explore or work in.
     </p>
 
     <div class="chips-container" style="gap: 0.75rem;">
@@ -364,7 +657,7 @@ function renderStepInterests() {
 
     <div style="display: flex; justify-content: space-between; margin-top: 2rem;">
       <button class="btn btn-secondary" id="prevStepBtn">← Back</button>
-      <button class="btn btn-primary" id="nextStepBtn" ${(appState.profile.interests || []).length === 0 ? 'disabled' : ''}>Next: Goals →</button>
+      <button class="btn btn-primary" id="nextStepBtn">Next: Goals →</button>
     </div>
   `;
 }
@@ -654,6 +947,8 @@ async function executeCareerGeneration() {
   appState.matches = matchProfileToCareers(appState.profile, careerCatalog);
   appState.selectedCareer = appState.matches[0]?.career || careerCatalog[0];
   refreshCareerDetails();
+  appState.hasCompletedOnboarding = true;
+  appState.view = 'dashboard';
   saveState();
 
   // 2. Optional Serverless Gemini AI Personalization
@@ -760,6 +1055,12 @@ function renderResultsDashboard() {
         </p>
       </div>
       <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+        <button id="backToHomeBtn" class="btn btn-secondary btn-sm">
+          <span>🏠</span> Home
+        </button>
+        <button id="restartAssessmentBtn" class="btn btn-secondary btn-sm">
+          <span>🔄</span> Start Fresh
+        </button>
         <button id="editProfileBtn" class="btn btn-secondary btn-sm">
           <span>✏️</span> Edit Profile
         </button>
@@ -1557,6 +1858,24 @@ function bindResultsEvents() {
     });
   });
 
+  // Home Navigation
+  const homeBtn = document.getElementById('backToHomeBtn');
+  if (homeBtn) {
+    homeBtn.addEventListener('click', () => {
+      appState.view = 'landing';
+      renderLandingHero();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // Restart / Start Fresh
+  const restartBtn = document.getElementById('restartAssessmentBtn');
+  if (restartBtn) {
+    restartBtn.addEventListener('click', () => {
+      resetUserAssessment();
+    });
+  }
+
   // Edit Profile
   const editBtn = document.getElementById('editProfileBtn');
   if (editBtn) {
@@ -1810,12 +2129,13 @@ function appendChatMessage(sender, text) {
 // Global Event Listeners & Modals
 // -----------------------------------------------------------------------------
 function setupEventListeners() {
-  // Brand link resets view to dashboard if ready or step 1
+  // Brand link navigates to landing hero
   if (brandLink) {
     brandLink.addEventListener('click', (e) => {
       e.preventDefault();
-      if (appState.matches.length > 0) renderResultsDashboard();
-      else renderOnboardingWizard();
+      appState.view = 'landing';
+      renderLandingHero();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     });
   }
 

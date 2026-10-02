@@ -12,6 +12,7 @@ const SCHEMA_VERSION = 2;
 
 export const defaultState = {
   version: SCHEMA_VERSION,
+  hasCompletedOnboarding: false,
   profile: null,
   selectedCareerId: null,
   roadmapDuration: 12,
@@ -32,6 +33,7 @@ export const defaultState = {
 export const storageService = {
   loadData() {
     try {
+      if (typeof localStorage === 'undefined') return { ...defaultState };
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return { ...defaultState };
 
@@ -60,15 +62,19 @@ export const storageService = {
   saveData(data) {
     try {
       if (!data || typeof data !== 'object') return false;
+      if (typeof localStorage === 'undefined') return false;
 
       // Sanitization: Ensure API keys or secrets are NEVER stored
       const sanitized = {
         version: SCHEMA_VERSION,
+        hasCompletedOnboarding: Boolean(data.hasCompletedOnboarding),
         profile: data.profile || null,
         selectedCareerId: data.selectedCareerId || null,
+        roadmapDuration: data.roadmapDuration || 12,
         completedRoadmapWeeks: Array.isArray(data.completedRoadmapWeeks) ? data.completedRoadmapWeeks : [],
         completedProjectIds: Array.isArray(data.completedProjectIds) ? data.completedProjectIds : [],
         practicedInterviewQuestionIds: Array.isArray(data.practicedInterviewQuestionIds) ? data.practicedInterviewQuestionIds : [],
+        completedPlacementTopicIds: Array.isArray(data.completedPlacementTopicIds) ? data.completedPlacementTopicIds : [],
         completedSkillNames: Array.isArray(data.completedSkillNames) ? data.completedSkillNames : [],
         notes: data.notes && typeof data.notes === 'object' ? data.notes : {},
         coachMessages: Array.isArray(data.coachMessages) ? data.coachMessages.slice(-50) : [], // keep last 50
