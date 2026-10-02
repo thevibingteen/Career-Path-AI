@@ -7,10 +7,11 @@
  * - 4 progressive phases: Foundations (W1-3), Core Mastery (W4-6), Advanced/Ecosystem (W7-9), Portfolio & Interview Prep (W10-12)
  */
 
-export function generatePersonalizedRoadmap(career, userSkills = [], weeklyHours = 10) {
+export function generatePersonalizedRoadmap(career, userSkills = [], weeklyHours = 10, totalWeeks = 12) {
   if (!career) return null;
 
   const hours = Math.max(4, Math.min(40, weeklyHours || 10));
+  const planDuration = [4, 8, 12].includes(Number(totalWeeks)) ? Number(totalWeeks) : 12;
 
   // Determine which essential skills are already present vs missing
   const userSkillNames = new Set(
@@ -32,7 +33,7 @@ export function generatePersonalizedRoadmap(career, userSkills = [], weeklyHours
   // Scale weekly task scope according to available hours
   const effortDescriptor = hours >= 20 ? 'Intensive (20h/wk)' : hours >= 12 ? 'Standard (12-15h/wk)' : 'Part-Time (8-10h/wk)';
 
-  const weeks = [
+  const full12Weeks = [
     // Phase 1: Foundations & Environment
     {
       week: 1,
@@ -228,10 +229,25 @@ export function generatePersonalizedRoadmap(career, userSkills = [], weeklyHours
     }
   ];
 
+  let selectedWeeks = full12Weeks;
+  if (planDuration === 4) {
+    // 4-Week Fast-Track Sprint: W1 Setup, W2 Core Syntax, W4 Architecture/Capstone, W10 Portfolio Polish
+    selectedWeeks = [full12Weeks[0], full12Weeks[1], full12Weeks[3], full12Weeks[9]];
+  } else if (planDuration === 8) {
+    // 8-Week Foundation & Capstone Track: W1-W5 Core Fundamentals, W6 Security, W10 Capstone, W11 Interviews
+    selectedWeeks = [full12Weeks[0], full12Weeks[1], full12Weeks[2], full12Weeks[3], full12Weeks[4], full12Weeks[5], full12Weeks[9], full12Weeks[10]];
+  }
+
+  // Renumber weeks sequentially 1..N
+  const weeks = selectedWeeks.map((w, idx) => ({
+    ...w,
+    week: idx + 1
+  }));
+
   return {
     careerId: career.id,
     careerTitle: career.title,
-    totalWeeks: 12,
+    totalWeeks: planDuration,
     adaptedWeeklyHours: hours,
     effortDescriptor,
     weeks,

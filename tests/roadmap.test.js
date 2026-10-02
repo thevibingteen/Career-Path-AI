@@ -25,3 +25,20 @@ test('generatePersonalizedRoadmap generates 12 customized weeks adapted to weekl
     assert.ok(w.practiceTask, `Week ${idx + 1} has practice task`);
   });
 });
+
+test('generatePersonalizedRoadmap supports 4-week and 8-week tracks', () => {
+  const career = careerCatalog.find(c => c.id === 'frontend-engineer');
+  assert.ok(career);
+
+  const r4 = generatePersonalizedRoadmap(career, [], 10, 4);
+  assert.equal(r4.totalWeeks, 4);
+  assert.equal(r4.weeks.length, 4);
+  assert.equal(r4.weeks[0].week, 1);
+  assert.equal(r4.weeks[3].week, 4);
+
+  const r8 = generatePersonalizedRoadmap(career, [], 10, 8);
+  assert.equal(r8.totalWeeks, 8);
+  assert.equal(r8.weeks.length, 8);
+  assert.equal(r8.weeks[0].week, 1);
+  assert.equal(r8.weeks[7].week, 8);
+});

@@ -43,5 +43,12 @@
         }
       ]
     }
+  ],
+  "rewrites": [
+    { "source": "/api/career/coach", "destination": "/api/getCoachResponse" },
+    { "source": "/api/career/interview", "destination": "/api/getInterviewPrep" },
+    { "source": "/api/career/recommend", "destination": "/api/getCareerAdvice" },
+    { "source": "/api/career/advice", "destination": "/api/getCareerAdvice" },
+    { "source": "/api/career/resume", "destination": "/api/analyzeResume" }
   ]
 }

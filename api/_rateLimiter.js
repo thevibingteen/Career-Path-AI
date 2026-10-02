@@ -9,7 +9,7 @@ const MAX_REQUESTS_PER_WINDOW = 20;
 
 export function checkRateLimit(req) {
   // Extract client IP address from Vercel / proxy headers
-  const forwarded = req.headers['x-forwarded-for'];
+  const forwarded = req.headers?.['x-forwarded-for'];
   const ip = typeof forwarded === 'string'
     ? forwarded.split(',')[0].trim()
     : req.socket?.remoteAddress || '127.0.0.1';

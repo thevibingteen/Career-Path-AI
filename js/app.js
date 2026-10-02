@@ -45,10 +45,12 @@ const appState = {
   activeTab: 'overview',
   skillGaps: [],
   roadmap: null,
+  roadmapDuration: 12,
   coachMessages: [],
   completedRoadmapWeeks: [],
   completedProjectIds: [],
   practicedInterviewQuestionIds: [],
+  completedPlacementTopicIds: [],
   isAIActive: false,
   isGenerating: false,
   resumeAnalysis: null
@@ -108,6 +110,12 @@ function loadPersistedData() {
   if (saved.practicedInterviewQuestionIds) {
     appState.practicedInterviewQuestionIds = saved.practicedInterviewQuestionIds;
   }
+  if (saved.completedPlacementTopicIds) {
+    appState.completedPlacementTopicIds = saved.completedPlacementTopicIds;
+  }
+  if (saved.roadmapDuration) {
+    appState.roadmapDuration = saved.roadmapDuration;
+  }
   if (saved.coachMessages && saved.coachMessages.length > 0) {
     appState.coachMessages = saved.coachMessages;
   }
@@ -128,6 +136,8 @@ function saveState() {
     completedRoadmapWeeks: appState.completedRoadmapWeeks,
     completedProjectIds: appState.completedProjectIds,
     practicedInterviewQuestionIds: appState.practicedInterviewQuestionIds,
+    completedPlacementTopicIds: appState.completedPlacementTopicIds,
+    roadmapDuration: appState.roadmapDuration || 12,
     coachMessages: appState.coachMessages
   });
 }
@@ -138,7 +148,8 @@ function refreshCareerDetails() {
   appState.roadmap = generatePersonalizedRoadmap(
     appState.selectedCareer,
     appState.profile.skills,
-    appState.profile.hoursAvailablePerWeek
+    appState.profile.hoursAvailablePerWeek,
+    appState.roadmapDuration || 12
   );
 }
 
@@ -372,6 +383,20 @@ function renderStepGoals() {
     <div class="form-group">
       <label class="form-label" for="targetRole">Target Role or Direction (Optional)</label>
       <input type="text" id="targetRole" class="form-input" placeholder="e.g. Full Stack Developer, Data Scientist" value="${escapeAttr(appState.profile.targetRole || '')}">
+      <div style="margin-top: 0.6rem;">
+        <span style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 0.4rem;">
+          💡 <strong>Undecided or exploring?</strong> Click a domain below to auto-fill or leave empty to match purely on your skills:
+        </span>
+        <div style="display: flex; gap: 0.35rem; flex-wrap: wrap;">
+          <button type="button" class="btn btn-secondary btn-sm explore-role-chip" data-role="Frontend Engineer">🎨 Visual Apps &amp; UI</button>
+          <button type="button" class="btn btn-secondary btn-sm explore-role-chip" data-role="Backend Engineer">⚙️ Logic &amp; Databases</button>
+          <button type="button" class="btn btn-secondary btn-sm explore-role-chip" data-role="Full Stack Engineer">🌐 End-to-End Web</button>
+          <button type="button" class="btn btn-secondary btn-sm explore-role-chip" data-role="Data Scientist">📊 Data &amp; Machine Learning</button>
+          <button type="button" class="btn btn-secondary btn-sm explore-role-chip" data-role="Cloud &amp; DevOps Engineer">☁️ Cloud &amp; DevOps</button>
+          <button type="button" class="btn btn-secondary btn-sm explore-role-chip" data-role="Cybersecurity Analyst">🛡️ Security &amp; Networks</button>
+          <button type="button" class="btn btn-secondary btn-sm explore-role-chip" data-role="" style="font-style: italic;">✨ Match Based on My Skills</button>
+        </div>
+      </div>
     </div>
 
     <div class="form-group">
@@ -545,6 +570,22 @@ function bindStepFormEvents() {
     });
   }
 
+  // Step 6: Quick exploration chips for undecided students
+  if (step === 6) {
+    document.querySelectorAll('.explore-role-chip').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const role = btn.dataset.role;
+        const input = document.getElementById('targetRole');
+        if (input) {
+          input.value = role;
+          appState.profile.targetRole = role;
+          saveState();
+        }
+      });
+    });
+  }
+
   // Step 7: Range slider sync
   if (step === 7) {
     const slider = document.getElementById('weeklyHoursRange');
@@ -674,7 +715,7 @@ function renderResultsDashboard() {
   const readiness = calculateReadinessScore({
     skillGaps: appState.skillGaps,
     completedRoadmapWeeks: appState.completedRoadmapWeeks,
-    totalRoadmapWeeks: 12,
+    totalRoadmapWeeks: appState.roadmap?.totalWeeks || appState.roadmapDuration || 12,
     completedProjects: appState.completedProjectIds,
     practicedInterviewQuestions: appState.practicedInterviewQuestionIds
   });
@@ -702,6 +743,7 @@ function renderResultsDashboard() {
   if (appState.activeTab === 'overview') tabContent = renderTabOverview(selectedMatch);
   else if (appState.activeTab === 'skillgap') tabContent = renderTabSkillGap();
   else if (appState.activeTab === 'roadmap') tabContent = renderTabRoadmap();
+  else if (appState.activeTab === 'placement') tabContent = renderTabPlacement();
   else if (appState.activeTab === 'projects') tabContent = renderTabProjects();
   else if (appState.activeTab === 'interview') tabContent = renderTabInterview();
   else if (appState.activeTab === 'resume') tabContent = renderTabResume();
@@ -751,7 +793,8 @@ function renderResultsDashboard() {
       <nav class="tabs-nav" aria-label="Career Details Tabs">
         <button class="tab-btn ${appState.activeTab === 'overview' ? 'active' : ''}" data-tab="overview">Overview &amp; Fit</button>
         <button class="tab-btn ${appState.activeTab === 'skillgap' ? 'active' : ''}" data-tab="skillgap">Skill Gap Matrix</button>
-        <button class="tab-btn ${appState.activeTab === 'roadmap' ? 'active' : ''}" data-tab="roadmap">12-Week Roadmap</button>
+        <button class="tab-btn ${appState.activeTab === 'roadmap' ? 'active' : ''}" data-tab="roadmap">Learning Roadmap</button>
+        <button class="tab-btn ${appState.activeTab === 'placement' ? 'active' : ''}" data-tab="placement">Campus &amp; Placement Prep</button>
         <button class="tab-btn ${appState.activeTab === 'projects' ? 'active' : ''}" data-tab="projects">Portfolio Projects</button>
         <button class="tab-btn ${appState.activeTab === 'interview' ? 'active' : ''}" data-tab="interview">Interview Prep</button>
         <button class="tab-btn ${appState.activeTab === 'resume' ? 'active' : ''}" data-tab="resume">Resume Assistant</button>
@@ -969,18 +1012,239 @@ function renderTabRoadmap() {
     `;
   }).join('');
 
+  const completedCount = appState.completedRoadmapWeeks.filter(w => w <= rm.totalWeeks).length;
+
   return `
     <div>
-      <div style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+      <div style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
         <div>
-          <h3 style="font-size: 1.15rem; font-weight: 700;">12-Week Personalized Study Schedule</h3>
+          <h3 style="font-size: 1.15rem; font-weight: 700;">Personalized Learning Schedule</h3>
           <p style="font-size: 0.85rem; color: var(--text-muted);">
-            Paced for your budget of <strong>${rm.adaptedWeeklyHours} hours/week</strong>. Check off weeks as you progress!
+            Paced for your budget of <strong>${rm.adaptedWeeklyHours} hours/week</strong> (${escapeHtml(rm.effortDescriptor)}). Check off weeks as you progress!
           </p>
         </div>
-        <span class="badge badge-success">${appState.completedRoadmapWeeks.length} / 12 Weeks Done</span>
+        <div style="display: flex; gap: 0.35rem; align-items: center; flex-wrap: wrap;">
+          <span style="font-size: 0.8rem; color: var(--text-muted); margin-right: 0.25rem;">Duration:</span>
+          <button class="btn btn-sm ${rm.totalWeeks === 4 ? 'btn-primary' : 'btn-secondary'}" data-set-roadmap-duration="4">
+            ⚡ 4-Week Sprint
+          </button>
+          <button class="btn btn-sm ${rm.totalWeeks === 8 ? 'btn-primary' : 'btn-secondary'}" data-set-roadmap-duration="8">
+            🏗️ 8-Week Foundation
+          </button>
+          <button class="btn btn-sm ${rm.totalWeeks === 12 ? 'btn-primary' : 'btn-secondary'}" data-set-roadmap-duration="12">
+            🎯 12-Week Comprehensive
+          </button>
+          <span class="badge badge-success" style="margin-left: 0.5rem;">${completedCount} / ${rm.totalWeeks} Weeks Done</span>
+        </div>
       </div>
       ${weeksHtml}
+    </div>
+  `;
+}
+
+function renderTabPlacement() {
+  const c = appState.selectedCareer;
+  const completedTopics = appState.completedPlacementTopicIds || [];
+
+  const coreCSTopics = [
+    {
+      id: 'cs-oop',
+      title: 'Object-Oriented Programming (OOP)',
+      description: 'Encapsulation, Inheritance, Polymorphism, Abstraction, and SOLID principles (Single Responsibility, Open-Closed, Liskov, Interface Segregation, Dependency Inversion).',
+      interviewerLookout: 'Can you demonstrate runtime polymorphism vs compile-time polymorphism with code, and explain why composition is often preferred over deep inheritance hierarchies?'
+    },
+    {
+      id: 'cs-dbms',
+      title: 'Database Management Systems (DBMS)',
+      description: 'ACID guarantees, SQL Joins (INNER, LEFT, RIGHT, FULL), Normalization (1NF through 3NF), B-Tree indexing mechanisms, Transactions, and Locking vs Concurrency.',
+      interviewerLookout: 'Can you explain why indexing speeds up SELECT queries but adds write overhead, and how to debug a slow query using EXPLAIN ANALYZE?'
+    },
+    {
+      id: 'cs-os',
+      title: 'Operating Systems (OS)',
+      description: 'Process vs Thread, Virtual Memory & Paging, CPU Scheduling algorithms, Inter-Process Communication (IPC), Deadlock conditions (Mutual Exclusion, Hold & Wait, No Preemption, Circular Wait).',
+      interviewerLookout: 'Explain what happens during a Context Switch, and the difference between multi-threading and multi-processing.'
+    },
+    {
+      id: 'cs-networks',
+      title: 'Computer Networks (CN)',
+      description: 'OSI 7-Layer reference model, TCP vs UDP, TCP 3-Way Handshake, DNS resolution journey, HTTP/1.1 vs HTTP/2 multiplexing, CORS headers, and SSL/TLS handshake.',
+      interviewerLookout: 'Walk through everything that happens from the millisecond a user presses Enter on a URL in their browser until the webpage renders.'
+    }
+  ];
+
+  const dsaPatterns = [
+    {
+      id: 'dsa-twopointers',
+      pattern: 'Two Pointers & Sliding Window',
+      applications: 'Array subarray sums, palindrome verification, trapped rainwater, anagram substrings.',
+      difficulty: 'High Yield for Freshers'
+    },
+    {
+      id: 'dsa-hashmap',
+      pattern: 'Hash Maps & Frequency Arrays',
+      applications: 'Two-Sum, group anagrams, LRU Cache baseline, longest consecutive sequence.',
+      difficulty: 'High Yield for Freshers'
+    },
+    {
+      id: 'dsa-fastslow',
+      pattern: 'Fast & Slow Pointers (Floyd Cycle)',
+      applications: 'Detecting loops in linked lists, finding middle node in a single pass.',
+      difficulty: 'Medium Yield'
+    },
+    {
+      id: 'dsa-binarysearch',
+      pattern: 'Binary Search on Range / Answer',
+      applications: 'Rotated sorted arrays, peak finding, allocation problems (Koko eating bananas).',
+      difficulty: 'High Yield'
+    },
+    {
+      id: 'dsa-trees',
+      pattern: 'Tree Traversals (BFS & DFS)',
+      applications: 'Level-order traversal, lowest common ancestor (LCA), max depth, path sum.',
+      difficulty: 'High Yield'
+    }
+  ];
+
+  const placementRounds = [
+    {
+      round: 'Round 1: Online Assessment (OA)',
+      focus: 'Aptitude & DSA Coding (60-90 min)',
+      strategy: 'Solve 2-3 algorithmic problems. Focus on passing all edge cases (empty inputs, single element, large numbers). Time complexity must meet constraints (usually O(N) or O(N log N)).'
+    },
+    {
+      round: 'Round 2: Technical Interview (Core CS & DSA)',
+      focus: 'Live Coding & CS Fundamentals (45-60 min)',
+      strategy: 'Think aloud! Write clean variable names, state time & space complexity upfront, test your own code with edge cases before saying you are done. Answer CS questions with real architectural examples.'
+    },
+    {
+      round: 'Round 3: Project Deep-Dive & Architecture',
+      focus: 'Portfolio Code Review (45 min)',
+      strategy: 'Know every line of code on your GitHub projects. Explain why you chose your tech stack, what bottlenecks you hit, and how you deployed it. Use the STAR framework.'
+    },
+    {
+      round: 'Round 4: HR & Cultural Alignment',
+      focus: 'Behavioral Scenarios & Motivation (30 min)',
+      strategy: 'Show genuine curiosity about company engineering practices. Prepare 3 thoughtful questions for the interviewer. Be honest about learning curves.'
+    }
+  ];
+
+  return `
+    <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+      <!-- Header Banner -->
+      <div class="card" style="background: linear-gradient(135deg, rgba(79, 70, 229, 0.08), rgba(16, 185, 129, 0.08)); border: 1px solid var(--primary-border); padding: 1.25rem;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.75rem;">
+          <div>
+            <span class="badge badge-ai" style="margin-bottom: 0.35rem;">🎓 Student &amp; Fresher Preparation Hub</span>
+            <h3 style="font-size: 1.2rem; font-weight: 800; color: var(--text-main);">
+              Campus Placements &amp; Off-Campus Hiring Playbook
+            </h3>
+            <p style="font-size: 0.875rem; color: var(--text-muted); margin-top: 0.25rem;">
+              Structured preparation for internships, entry-level engineering roles, and college placement drives for <strong>${escapeHtml(c.title)}</strong>.
+            </p>
+          </div>
+          <span class="badge badge-success">
+            ${completedTopics.length} / ${coreCSTopics.length + dsaPatterns.length} Placement Checkpoints Completed
+          </span>
+        </div>
+      </div>
+
+      <!-- Campus Placement Rounds Breakdown -->
+      <div>
+        <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 0.75rem;">The 4 Campus &amp; Fresher Interview Rounds</h3>
+        <div class="grid-2">
+          ${placementRounds.map(r => `
+            <div class="card" style="padding: 1.1rem;">
+              <span class="badge badge-local" style="margin-bottom: 0.4rem;">${escapeHtml(r.round)}</span>
+              <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.35rem;">${escapeHtml(r.focus)}</h4>
+              <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.45;">${escapeHtml(r.strategy)}</p>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <!-- Core CS Fundamentals Checklist -->
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+          <div>
+            <h3 style="font-size: 1.15rem; font-weight: 700;">Core CS Fundamentals Checklist</h3>
+            <p style="font-size: 0.825rem; color: var(--text-muted);">
+              Most campus interviewers ask questions from these 4 core Computer Science subjects regardless of framework.
+            </p>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+          ${coreCSTopics.map(t => {
+            const isDone = completedTopics.includes(t.id);
+            return `
+              <div class="card" style="border-left: 4px solid ${isDone ? 'var(--success)' : 'var(--primary)'}; background: ${isDone ? 'var(--bg-card-subtle)' : 'var(--bg-card)'}; padding: 1rem;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.75rem;">
+                  <div>
+                    <h4 style="font-size: 1rem; font-weight: 700; margin-bottom: 0.25rem;">${escapeHtml(t.title)}</h4>
+                    <p style="font-size: 0.85rem; color: var(--text-main); line-height: 1.45; margin-bottom: 0.5rem;">
+                      ${escapeHtml(t.description)}
+                    </p>
+                    <div style="font-size: 0.825rem; color: var(--text-muted); background: var(--bg-main); padding: 0.5rem 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+                      💡 <strong>Interviewer Lookout:</strong> ${escapeHtml(t.interviewerLookout)}
+                    </div>
+                  </div>
+                  <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; font-size: 0.825rem; font-weight: 600; white-space: nowrap;">
+                    <input type="checkbox" class="toggle-placement-checkbox" data-topic-id="${t.id}" ${isDone ? 'checked' : ''} style="width: 18px; height: 18px;">
+                    ${isDone ? 'Mastered ✓' : 'Mark Mastered'}
+                  </label>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+
+      <!-- High-Yield DSA Coding Patterns -->
+      <div>
+        <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 0.25rem;">High-Yield DSA Patterns for Freshers</h3>
+        <p style="font-size: 0.825rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+          Rather than memorizing 500 LeetCode problems, master these fundamental patterns that cover 80% of entry-level coding assessments.
+        </p>
+        <div class="grid-2">
+          ${dsaPatterns.map(p => {
+            const isDone = completedTopics.includes(p.id);
+            return `
+              <div class="card" style="padding: 1rem; border-left: 3px solid ${isDone ? 'var(--success)' : 'var(--primary-border)'};">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.35rem;">
+                  <span class="badge badge-ai">${escapeHtml(p.difficulty)}</span>
+                  <label style="display: flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; cursor: pointer;">
+                    <input type="checkbox" class="toggle-placement-checkbox" data-topic-id="${p.id}" ${isDone ? 'checked' : ''}>
+                    ${isDone ? 'Practiced ✓' : 'Practice'}
+                  </label>
+                </div>
+                <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.3rem;">${escapeHtml(p.pattern)}</h4>
+                <p style="font-size: 0.825rem; color: var(--text-muted); line-height: 1.4;">
+                  <strong>Common Applications:</strong> ${escapeHtml(p.applications)}
+                </p>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+
+      <!-- Off-Campus & Cold Outreach Strategy -->
+      <div class="card" style="background: var(--bg-card); padding: 1.25rem;">
+        <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem;">Off-Campus Outreach Template for Students</h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+          Sending 10 thoughtful, personalized messages to alumni or engineers on LinkedIn has a 10x higher response rate than 200 "Easy Apply" clicks:
+        </p>
+        <div style="background: var(--bg-main); border: 1px solid var(--border); padding: 1rem; border-radius: var(--radius-sm); font-size: 0.85rem; font-family: monospace; line-height: 1.5; color: var(--text-main); white-space: pre-wrap;">
+Hi [Name],
+
+I noticed your engineering journey at [Company] after graduating from [University / or self-learning track]. I am a final-year student passionate about ${escapeHtml(c.title)}.
+
+I recently built and deployed a project: [Project Name - with Live Demo link] using [Primary Tech Stack], where I implemented [Key Feature - e.g. JWT authentication and SQL schema optimization].
+
+I would love to learn from your experience: what is one technical competency your team values most in entry-level engineers that most new graduates overlook?
+
+Thank you for your time,
+[Your Name] | [LinkedIn / GitHub link]</div>
+      </div>
     </div>
   `;
 }
@@ -1310,7 +1574,7 @@ function bindResultsEvents() {
       const readiness = calculateReadinessScore({
         skillGaps: appState.skillGaps,
         completedRoadmapWeeks: appState.completedRoadmapWeeks,
-        totalRoadmapWeeks: 12,
+        totalRoadmapWeeks: appState.roadmap?.totalWeeks || appState.roadmapDuration || 12,
         completedProjects: appState.completedProjectIds,
         practicedInterviewQuestions: appState.practicedInterviewQuestionIds
       });
@@ -1377,6 +1641,34 @@ function bindResultsEvents() {
       } else if (!cb.checked && idx !== -1) {
         appState.practicedInterviewQuestionIds.splice(idx, 1);
       }
+      saveState();
+      renderResultsDashboard();
+    });
+  });
+
+  // Roadmap duration switcher (4, 8, 12 weeks)
+  document.querySelectorAll('[data-set-roadmap-duration]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const dur = parseInt(btn.dataset.setRoadmapDuration, 10);
+      appState.roadmapDuration = dur;
+      refreshCareerDetails();
+      saveState();
+      renderResultsDashboard();
+    });
+  });
+
+  // Checkbox toggles for campus placement checkpoints
+  document.querySelectorAll('.toggle-placement-checkbox').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const id = cb.dataset.topicId;
+      const list = appState.completedPlacementTopicIds || [];
+      const idx = list.indexOf(id);
+      if (cb.checked && idx === -1) {
+        list.push(id);
+      } else if (!cb.checked && idx !== -1) {
+        list.splice(idx, 1);
+      }
+      appState.completedPlacementTopicIds = list;
       saveState();
       renderResultsDashboard();
     });

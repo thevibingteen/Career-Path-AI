@@ -37,7 +37,13 @@ const server = http.createServer(async (req, res) => {
 
   // Route API endpoints
   if (pathname.startsWith('/api/')) {
-    const endpointName = pathname.replace('/api/', '').split('/')[0];
+    let endpointName = pathname.replace('/api/', '').split('?')[0];
+    if (endpointName === 'career/coach') endpointName = 'getCoachResponse';
+    else if (endpointName === 'career/interview') endpointName = 'getInterviewPrep';
+    else if (endpointName === 'career/recommend' || endpointName === 'career/advice') endpointName = 'getCareerAdvice';
+    else if (endpointName === 'career/resume') endpointName = 'analyzeResume';
+    else endpointName = endpointName.split('/')[0];
+
     const modulePath = path.join(__dirname, 'api', `${endpointName}.js`);
 
     if (fs.existsSync(modulePath)) {
@@ -98,6 +104,7 @@ const server = http.createServer(async (req, res) => {
     safePath = '/index.html';
   }
 
+  const filePath = path.join(__dirname, safePath);
   let targetFile = filePath;
   if (!fs.existsSync(targetFile) && fs.existsSync(filePath + '.html')) {
     targetFile = filePath + '.html';

@@ -29,3 +29,56 @@ test('checkRateLimit enforces sliding-window limit per IP', () => {
   assert.equal(limited.remaining, 0);
   assert.ok(limited.retryAfterSec > 0);
 });
+
+test('getCoachResponse provides helpful deterministic response in local guidance mode', async () => {
+  const handler = (await import('../api/getCoachResponse.js')).default;
+  let responseData = null;
+  let statusCode = 0;
+
+  const mockReq = {
+    method: 'POST',
+    headers: { 'x-forwarded-for': '198.51.100.99' },
+    body: {
+      message: 'What should I do this week?',
+      context: { targetCareer: 'Frontend Engineer', weeklyHours: 12 }
+    }
+  };
+  const mockRes = {
+    status(code) { statusCode = code; return this; },
+    json(data) { responseData = data; return this; },
+    setHeader() {}
+  };
+
+  await handler(mockReq, mockRes);
+  assert.equal(statusCode, 200);
+  assert.ok(responseData.result.isLocalFallback);
+  assert.ok(responseData.result.coachResponse.length > 50);
+  assert.ok(responseData.result.suggestedPrompts.length > 0);
+});
+
+test('getInterviewPrep provides role-specific questions and STAR guidance in local guidance mode', async () => {
+  const handler = (await import('../api/getInterviewPrep.js')).default;
+  let responseData = null;
+  let statusCode = 0;
+
+  const mockReq = {
+    method: 'POST',
+    headers: { 'x-forwarded-for': '198.51.100.100' },
+    body: {
+      careerTitle: 'Frontend Engineer',
+      experienceLevel: 'Student'
+    }
+  };
+  const mockRes = {
+    status(code) { statusCode = code; return this; },
+    json(data) { responseData = data; return this; },
+    setHeader() {}
+  };
+
+  await handler(mockReq, mockRes);
+  assert.equal(statusCode, 200);
+  assert.ok(responseData.result.isLocalFallback);
+  assert.equal(responseData.result.questions.length, 5);
+  assert.ok(responseData.result.generalTips.length > 0);
+  assert.ok(responseData.result.questions[0].sampleTalkingPoints.length > 0);
+});
