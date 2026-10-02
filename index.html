@@ -1,200 +1,212 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="system">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CareerPath AI | Personalized Career Advisor</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚀</text></svg>">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CareerPath AI | Intelligent Career Planning &amp; Skill Gap Platform</title>
+  <meta name="description" content="Intelligent, privacy-conscious personal career guidance platform. Deterministic matching, skill-gap analysis, personalized 12-week roadmaps, and free-tier AI coaching.">
+  <meta name="keywords" content="career advice, skill gap analysis, learning roadmap, developer careers, AI career coach, interview prep">
+  
+  <!-- Open Graph / Social Metadata -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="CareerPath AI — Career Planning &amp; Skill Gap Engine">
+  <meta property="og:description" content="Discover career paths matching your profile, identify missing skills, and build a 12-week learning roadmap.">
+  <meta property="og:url" content="https://careerpath-ai.vercel.app/">
+  
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="CareerPath AI — Career Planning &amp; Skill Gap Engine">
+  <meta name="twitter:description" content="Discover career paths matching your profile, identify missing skills, and build a 12-week learning roadmap.">
+
+  <!-- Favicon & PWA Manifest -->
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#4f46e5">
+
+  <link rel="stylesheet" href="style.css">
 </head>
-<body class="min-h-screen flex items-center justify-center p-4">
-    <!-- Career Details Modal -->
-    <div id="careerModal" class="modal">
-        <div class="modal-content">
-            <div class="flex justify-between items-center mb-6">
-                <h2 id="modalTitle" class="text-2xl font-bold text-gray-800 dark:text-white"></h2>
-                <button onclick="closeModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
-                    <i class="fas fa-times text-xl"></i>
-                </button>
-            </div>
-            
-            <!-- Step Navigation in Modal -->
-            <div class="mb-6 bg-gray-100 dark:bg-gray-700 rounded-lg p-3">
-                <div class="flex justify-between">
-                    <button onclick="showStepInModal(1)" class="text-sm px-3 py-1 rounded ${state.currentModalStep === 1 ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300'}">Skills</button>
-                    <button onclick="showStepInModal(2)" class="text-sm px-3 py-1 rounded ${state.currentModalStep === 2 ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300'}">Interests</button>
-                    <button onclick="showStepInModal(3)" class="text-sm px-3 py-1 rounded ${state.currentModalStep === 3 ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300'}">Goals</button>
-                    <button onclick="showStepInModal(4)" class="text-sm px-3 py-1 rounded ${state.currentModalStep === 4 ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300'}">Results</button>
-                </div>
-            </div>
-            
-            <div id="modalContent" class="space-y-6">
-                <!-- Content will be dynamically inserted here -->
-            </div>
+<body>
+  <!-- Global Application Header -->
+  <header class="app-header" role="banner">
+    <div class="container header-content">
+      <a href="#" class="brand" id="brandLink" aria-label="CareerPath AI Home">
+        <div class="brand-icon" aria-hidden="true">🚀</div>
+        <div>
+          <span class="brand-title">CareerPath AI</span>
         </div>
+      </a>
+
+      <div class="header-actions">
+        <!-- AI vs Local Mode Indicator Badge -->
+        <span id="aiStatusBadge" class="badge badge-local" title="Operating with zero-cost deterministic matching">
+          <span aria-hidden="true">⚡</span> Local Guidance Mode
+        </span>
+
+        <!-- Theme Toggle Button -->
+        <button id="themeToggleBtn" class="btn btn-ghost btn-sm" aria-label="Toggle Light/Dark Theme" title="Toggle theme">
+          <span id="themeIcon" aria-hidden="true">🌙</span>
+        </button>
+
+        <!-- Data Backup / Export Button -->
+        <button id="dataBackupBtn" class="btn btn-ghost btn-sm" aria-label="Backup or restore career data" title="Backup or Restore Data">
+          <span aria-hidden="true">💾</span> Data
+        </button>
+
+        <!-- Help & Support -->
+        <button id="helpSupportBtn" class="btn btn-ghost btn-sm" aria-label="Help and documentation" title="Help & Support">
+          <span aria-hidden="true">❓</span> Help
+        </button>
+      </div>
     </div>
+  </header>
 
-    <!-- Share Modal -->
-    <div id="shareModal" class="modal">
-        <div class="modal-content">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Share Your Results</h2>
-                <button onclick="closeShareModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
-                    <i class="fas fa-times text-xl"></i>
-                </button>
-            </div>
-            <div class="space-y-4">
-                <p class="dark:text-gray-300">Share your career path results with others:</p>
-                <div class="share-buttons">
-                    <div class="share-button whatsapp" onclick="shareOnWhatsApp()">
-                        <i class="fab fa-whatsapp mr-2"></i> WhatsApp
-                    </div>
-                    <div class="share-button telegram" onclick="shareOnTelegram()">
-                        <i class="fab fa-telegram mr-2"></i> Telegram
-                    </div>
-                    <div class="share-button twitter" onclick="shareOnTwitter()">
-                        <i class="fab fa-twitter mr-2"></i> Twitter
-                    </div>
-                    <div class="share-button linkedin" onclick="shareOnLinkedIn()">
-                        <i class="fab fa-linkedin mr-2"></i> LinkedIn
-                    </div>
-                    <div class="share-button facebook" onclick="shareOnFacebook()">
-                        <i class="fab fa-facebook mr-2"></i> Facebook
-                    </div>
-                </div>
-                <div class="mt-4">
-                    <p class="text-sm font-medium mb-2 dark:text-gray-300">Or copy link:</p>
-                    <div class="flex">
-                        <input type="text" id="shareableLink" class="flex-grow px-3 py-2 border border-gray-300 rounded-l-lg dark:bg-gray-700 dark:text-white dark:border-gray-600" readonly value="">
-                        <button onclick="copyShareLink()" class="bg-blue-600 text-white px-4 py-2 rounded-r-lg">Copy</button>
-                    </div>
-                </div>
-            </div>
+  <!-- Main Application Region -->
+  <main id="app" class="container" style="flex: 1; padding-top: 1.5rem; padding-bottom: 3rem;" role="main">
+    <!-- Dynamically rendered by js/app.js: Onboarding Wizard OR Results Dashboard -->
+  </main>
+
+  <!-- AI Career Coach Floating Drawer & FAB -->
+  <div id="coachContainer">
+    <!-- Floating Action Button -->
+    <button id="coachFab" class="coach-fab" aria-label="Open AI Career Coach" title="Ask AI Career Coach">
+      <span aria-hidden="true">💬</span>
+    </button>
+
+    <!-- Slide-up Coach Drawer -->
+    <section id="coachDrawer" class="coach-drawer" style="display: none;" aria-label="AI Career Coach Drawer">
+      <div class="coach-header">
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <span aria-hidden="true">🤖</span>
+          <strong>AI Career Coach</strong>
         </div>
+        <button id="closeCoachBtn" class="btn btn-ghost btn-sm" style="color: white;" aria-label="Close Coach Drawer">✕</button>
+      </div>
+
+      <div id="coachChatBody" class="coach-body">
+        <div class="chat-bubble chat-bubble-coach">
+          Hello! I'm your CareerPath AI Coach. Ask me anything about your roadmap, skill gaps, interview prep, or resume strategies!
+        </div>
+      </div>
+
+      <!-- Quick Prompt Suggestions -->
+      <div id="coachSuggestions" style="padding: 0.4rem 0.8rem; background: var(--bg-card); display: flex; gap: 0.4rem; overflow-x: auto; border-top: 1px solid var(--border);">
+        <button class="chip btn-sm coach-prompt-chip" data-prompt="What should I learn this week?">What should I learn first?</button>
+        <button class="chip btn-sm coach-prompt-chip" data-prompt="Suggest a project for my portfolio.">Portfolio idea?</button>
+        <button class="chip btn-sm coach-prompt-chip" data-prompt="Give me a mock interview question.">Interview practice</button>
+      </div>
+
+      <form id="coachForm" class="coach-footer">
+        <input type="text" id="coachInput" class="form-input" placeholder="Ask a career or technical question..." aria-label="Your message to AI Coach" required autocomplete="off">
+        <button type="submit" class="btn btn-primary btn-sm" id="coachSendBtn">Send</button>
+      </form>
+    </section>
+  </div>
+
+  <!-- Accessible Modals -->
+  <!-- 1. Data Backup & Restore Modal -->
+  <div id="backupModal" class="modal-backdrop" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="backupModalTitle">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="backupModalTitle" class="modal-title">Career Data Backup &amp; Privacy</h2>
+        <button class="modal-close" data-close-modal="backupModal" aria-label="Close modal">✕</button>
+      </div>
+      <div>
+        <p style="margin-bottom: 1rem; color: var(--text-muted); font-size: 0.9rem;">
+          CareerPath AI stores your profile, progress, and roadmap notes locally on your device. You can export your data to a JSON file or import a previous backup at any time.
+        </p>
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1.5rem;">
+          <button id="exportDataBtn" class="btn btn-primary">
+            <span>📥</span> Export My Data (JSON)
+          </button>
+          <label class="btn btn-secondary" style="cursor: pointer;">
+            <span>📤</span> Import Backup (JSON)
+            <input type="file" id="importFileInput" accept=".json" style="display: none;">
+          </label>
+          <button id="resetAllDataBtn" class="btn btn-ghost" style="color: var(--danger);">
+            <span>🗑️</span> Reset All Data
+          </button>
+        </div>
+        <div id="backupNotification" style="font-size: 0.85rem; color: var(--primary);"></div>
+      </div>
     </div>
+  </div>
 
-    <!-- Support Modal -->
-    <div id="supportModal" class="modal">
-        <div class="modal-content">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Help & Support</h2>
-                <button onclick="closeSupportModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
-                    <i class="fas fa-times text-xl"></i>
-                </button>
-            </div>
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Your Email*</label>
-                    <input type="email" id="supportEmail" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white dark:border-gray-600" placeholder="your@email.com">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">What do you need help with?*</label>
-                    <select id="supportType" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white dark:border-gray-600">
-                        <option value="">Select an option</option>
-                        <option value="bug">Report a Bug</option>
-                        <option value="question">Ask a Question</option>
-                        <option value="suggestion">Feature Suggestion</option>
-                        <option value="other">Other</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Message*</label>
-                    <textarea id="supportMessage" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white dark:border-gray-600" rows="4" placeholder="Please describe the issue or your question in detail..."></textarea>
-                </div>
-                <button onclick="submitSupportRequest()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-300">
-                    Submit Request
-                </button>
-            </div>
+  <!-- 2. Help & Support Modal -->
+  <div id="helpModal" class="modal-backdrop" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="helpModalTitle">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="helpModalTitle" class="modal-title">Help &amp; Transparency Guide</h2>
+        <button class="modal-close" data-close-modal="helpModal" aria-label="Close modal">✕</button>
+      </div>
+      <div style="font-size: 0.9rem; color: var(--text-main); display: flex; flex-direction: column; gap: 1rem;">
+        <div>
+          <h3 style="font-size: 1rem; color: var(--primary); margin-bottom: 0.25rem;">How Fit Scores Work</h3>
+          <p style="color: var(--text-muted);">
+            Fit scores are computed by our deterministic weighted matching algorithm across 5 dimensions: Skill fit (45%), Domain interest (20%), Experience suitability (15%), Role alignment (10%), and Work preferences (10%). We never guarantee employment; scores represent estimated profile alignment.
+          </p>
         </div>
+        <div>
+          <h3 style="font-size: 1rem; color: var(--primary); margin-bottom: 0.25rem;">Free-Tier &amp; Offline Operation</h3>
+          <p style="color: var(--text-muted);">
+            If Gemini AI quota is busy or unavailable, CareerPath AI seamlessly falls back to Local Guidance Mode using our comprehensive local career catalog and algorithms.
+          </p>
+        </div>
+        <div>
+          <h3 style="font-size: 1rem; color: var(--primary); margin-bottom: 0.25rem;">Found a Bug or Want to Contribute?</h3>
+          <p style="color: var(--text-muted);">
+            Visit our open-source GitHub repository to file an issue or submit improvements:<br>
+            <a href="https://github.com/thevibingteen/Career-Path-AI" target="_blank" rel="noopener noreferrer" style="color: var(--primary); font-weight: 600;">github.com/thevibingteen/Career-Path-AI</a>
+          </p>
+        </div>
+      </div>
     </div>
+  </div>
 
-    <div class="container max-w-6xl mx-auto">
-        <!-- Header -->
-        <header class="text-center mb-8 flex items-center justify-center relative">
-            <button id="themeToggle" class="absolute top-0 right-0 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white p-2 rounded-full">
-                <i class="fas fa-moon"></i>
-            </button>
-            <div class="logo">
-                <i class="fas fa-rocket"></i>
-            </div>
-            <div>
-                <h1 class="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
-                    CareerPath AI
-                </h1>
-                <p class="text-gray-600 dark:text-gray-300">Your personalized AI career advisor powered by Gemini</p>
-            </div>
-        </header>
-
-        <!-- Step Navigation -->
-        <div class="mb-6 bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
-            <div class="flex justify-between mb-2">
-                <button onclick="goToStep(1)" class="step-nav-btn ${state.currentStep === 1 ? 'active' : ''}">
-                    <div class="text-center p-2 ${state.currentStep === 1 ? 'bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-100' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'} rounded-lg">1. Skills</div>
-                </button>
-                <button onclick="goToStep(2)" class="step-nav-btn ${state.currentStep === 2 ? 'active' : ''}">
-                    <div class="text-center p-2 ${state.currentStep === 2 ? 'bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-100' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'} rounded-lg">2. Interests</div>
-                </button>
-                <button onclick="goToStep(3)" class="step-nav-btn ${state.currentStep === 3 ? 'active' : ''}">
-                    <div class="text-center p-2 ${state.currentStep === 3 ? 'bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-100' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'} rounded-lg">3. Goals</div>
-                </button>
-                <button onclick="goToStep(4)" class="step-nav-btn ${state.currentStep === 4 ? 'active' : ''}">
-                    <div class="text-center p-2 ${state.currentStep === 4 ? 'bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-100' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'} rounded-lg">4. Results</div>
-                </button>
-            </div>
-            <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
-                <div class="bg-blue-600 h-2.5 rounded-full progress-bar" style="width: ${(state.currentStep / 4) * 100}%"></div>
-            </div>
+  <!-- 3. Share Modal -->
+  <div id="shareModal" class="modal-backdrop" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="shareModalTitle">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="shareModalTitle" class="modal-title">Share Your Career Summary</h2>
+        <button class="modal-close" data-close-modal="shareModal" aria-label="Close modal">✕</button>
+      </div>
+      <div>
+        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">
+          Your private personal details stay safe. Share a clean summary of your top career match and learning trajectory:
+        </p>
+        <textarea id="shareSummaryText" class="form-textarea" rows="4" readonly style="font-size: 0.85rem; margin-bottom: 1rem;"></textarea>
+        <div style="display: flex; gap: 0.75rem;">
+          <button id="copyShareBtn" class="btn btn-primary">
+            <span>📋</span> Copy to Clipboard
+          </button>
+          <button id="nativeShareBtn" class="btn btn-secondary">
+            <span>📤</span> Share...
+          </button>
         </div>
-
-        <!-- Main Content -->
-        <div id="app" class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
-            <!-- Multi-step form will be rendered here -->
-        </div>
-        
-        <!-- Features Section -->
-        <div class="grid md:grid-cols-3 gap-6 mt-8">
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 card">
-                <div class="text-blue-600 text-2xl mb-4">
-                    <i class="fas fa-route"></i>
-                </div>
-                <h3 class="font-bold text-lg mb-2 dark:text-white">Multiple Career Paths</h3>
-                <p class="text-gray-600 dark:text-gray-300">Get 3 personalized career options with detailed roadmaps for each.</p>
-            </div>
-            
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 card">
-                <div class="text-blue-600 text-2xl mb-4">
-                    <i class="fas fa-chart-line"></i>
-                </div>
-                <h3 class="font-bold text-lg mb-2 dark:text-white">Skill Gap Analysis</h3>
-                <p class="text-gray-600 dark:text-gray-300">Identify missing skills and get recommendations to bridge those gaps.</p>
-            </div>
-            
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 card">
-                <div class="text-blue-600 text-2xl mb-4">
-                    <i class="fas fa-calendar-check"></i>
-                </div>
-                <h3 class="font-bold text-lg mb-2 dark:text-white">Learning Schedule</h3>
-                <p class="text-gray-600 dark:text-gray-300">Weekly plan with courses, projects, and milestones to track progress.</p>
-            </div>
-        </div>
-        
-        <!-- Footer -->
-        <footer class="text-center text-gray-600 dark:text-gray-300 mt-12 text-sm">
-            <p>Made by team Neurix | Powered by Google Gemini API</p>
-            <p class="mt-2">© 2025 CareerPath AI</p>
-            <div class="mt-4">
-                <button onclick="openSupportModal()" class="text-blue-600 dark:text-blue-400 hover:underline">
-                    <i class="fas fa-question-circle mr-1"></i> Help & Support
-                </button>
-            </div>
-        </footer>
+      </div>
     </div>
+  </div>
 
-    <script src="script.js"></script>
+  <!-- Global Footer -->
+  <footer style="background-color: var(--bg-card); border-top: 1px solid var(--border); padding: 2rem 0; margin-top: auto; font-size: 0.85rem; color: var(--text-muted);" role="contentinfo">
+    <div class="container" style="display: flex; flex-direction: column; gap: 0.75rem; align-items: center; text-align: center;">
+      <p>
+        <strong>CareerPath AI</strong> — Intelligent Career Guidance Platform &bull; Built with ❤️ by Team Neurix
+      </p>
+      <p style="font-size: 0.8rem; max-width: 600px;">
+        Informational career planning guidance. Compensation and hiring metrics are indicative benchmarks from public surveys. Always verify local market conditions.
+      </p>
+      <div style="display: flex; gap: 1.25rem; flex-wrap: wrap; justify-content: center; margin-top: 0.25rem;">
+        <a href="/privacy.html" style="color: var(--text-muted); text-decoration: none;">Privacy Policy</a>
+        <a href="/terms.html" style="color: var(--text-muted); text-decoration: none;">Terms of Service</a>
+        <a href="/disclaimer.html" style="color: var(--text-muted); text-decoration: none;">Career Disclaimer</a>
+        <a href="https://github.com/thevibingteen/Career-Path-AI" target="_blank" rel="noopener noreferrer" style="color: var(--text-muted); text-decoration: none;">GitHub Repository</a>
+        <a href="/robots.txt" style="color: var(--text-muted); text-decoration: none;">Robots.txt</a>
+        <a href="/sitemap.xml" style="color: var(--text-muted); text-decoration: none;">Sitemap</a>
+        <a href="/security.txt" style="color: var(--text-muted); text-decoration: none;">Security.txt</a>
+      </div>
+    </div>
+  </footer>
+
+  <script type="module" src="js/app.js"></script>
 </body>
 </html>

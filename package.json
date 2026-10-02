@@ -1,0 +1,22 @@
+{
+  "name": "career-path-ai",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Production-grade, privacy-conscious AI career guidance platform with deterministic matching and free-tier Gemini integration",
+  "type": "module",
+  "scripts": {
+    "start": "node dev-server.js",
+    "dev": "node dev-server.js",
+    "test": "node --test tests/**/*.test.js"
+  },
+  "keywords": [
+    "career-advice",
+    "ai-career-coach",
+    "gemini-api",
+    "skill-gap-analysis",
+    "learning-roadmap",
+    "deterministic-matching"
+  ],
+  "author": "Team Neurix",
+  "license": "MIT"
+}

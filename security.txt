@@ -1,0 +1,5 @@
+# security.txt for CareerPath AI
+Contact: https://github.com/thevibingteen/Career-Path-AI/security/advisories
+Preferred-Languages: en
+Canonical: https://careerpath-ai.vercel.app/security.txt
+Policy: https://github.com/thevibingteen/Career-Path-AI/blob/main/README.md#security

@@ -1,0 +1,6 @@
+# robots.txt for CareerPath AI
+User-agent: *
+Allow: /
+Disallow: /api/
+
+Sitemap: https://careerpath-ai.vercel.app/sitemap.xml
